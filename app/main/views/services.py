@@ -56,7 +56,6 @@ def list_services():
             framework_slugs=frameworks,
             statuses=statuses,
             lot_slug=request.args.get('lot'),
-            location=request.args.get('location'),
             role=request.args.get('role')
         )
     except ValidationError as e:

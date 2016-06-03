@@ -392,7 +392,7 @@ class TestListServices(BaseApplicationTest):
 
         assert_equal(response.status_code, 404)
 
-    def test_filter_services_by_lot_location_role(self):
+    def test_filter_services_by_lot_role(self):
         self.setup_services()
         response = self.client.get('/services?lot=digital-specialists')
         data = json.loads(response.get_data())
@@ -404,27 +404,10 @@ class TestListServices(BaseApplicationTest):
         assert_equal(response.status_code, 200)
         assert_equal(len(data['services']), 1)
 
-        response = self.client.get('/services?lot=digital-specialists&location=London&role=agileCoach')
-        data = json.loads(response.get_data())
-        assert_equal(response.status_code, 200)
-        assert_equal(len(data['services']), 1)
-
-        response = self.client.get('/services?lot=digital-specialists&location=Wales&role=agileCoach')
-        data = json.loads(response.get_data())
-        assert_equal(response.status_code, 200)
-        assert_equal(len(data['services']), 2)
-
         response = self.client.get('/services?lot=digital-specialists&role=agileCoach')
         data = json.loads(response.get_data())
         assert_equal(response.status_code, 200)
         assert_equal(len(data['services']), 2)
-
-    def test_cannot_filter_services_by_location_without_lot(self):
-        self.setup_services()
-        response = self.client.get('/services?location=Wales')
-        data = json.loads(response.get_data())
-        assert response.status_code == 400
-        assert data['error'] == 'Lot must be specified to filter by location'
 
     def test_can_only_filter_by_role_for_specialists_lot(self):
         self.setup_services()
@@ -432,13 +415,6 @@ class TestListServices(BaseApplicationTest):
         data = json.loads(response.get_data())
         assert response.status_code == 400
         assert data['error'] == 'Role only applies to Digital Specialists lot'
-
-    def test_role_required_for_digital_specialists_location_query(self):
-        self.setup_services()
-        response = self.client.get('/services?lot=digital-specialists&location=Wales')
-        data = json.loads(response.get_data())
-        assert response.status_code == 400
-        assert data['error'] == 'Role must be specified for Digital Specialists'
 
 
 class TestPostService(BaseApplicationTest, JSONUpdateTestMixin):
