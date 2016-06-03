@@ -991,7 +991,7 @@ class TestSupplierIsEligibleForBrief(BaseApplicationTest):
 
         assert response.status_code == 404
 
-    def test_supplier_is_ineligible_if_not_in_specialist_location(self):
+    def test_supplier_is_eligible_even_if_not_in_specialist_location(self):
         self.setup_services()
         with self.app.app_context():
             self.setup_dummy_user(id=1)
@@ -1007,7 +1007,7 @@ class TestSupplierIsEligibleForBrief(BaseApplicationTest):
         data = json.loads(response.get_data(as_text=True))
 
         assert response.status_code == 200
-        assert not data["services"]
+        assert data["services"]
 
     def test_supplier_is_ineligible_if_does_not_supply_the_role(self):
         self.setup_services()
@@ -1027,7 +1027,7 @@ class TestSupplierIsEligibleForBrief(BaseApplicationTest):
         assert response.status_code == 200
         assert not data["services"]
 
-    def test_supplier_is_ineligible_if_does_not_supply_in_outcome_location(self):
+    def test_supplier_is_eligible_even_if_does_not_supply_in_outcome_location(self):
         self.setup_services()
         with self.app.app_context():
             self.setup_dummy_user(id=1)
@@ -1043,4 +1043,4 @@ class TestSupplierIsEligibleForBrief(BaseApplicationTest):
         data = json.loads(response.get_data(as_text=True))
 
         assert response.status_code == 200
-        assert not data["services"]
+        assert data["services"]
