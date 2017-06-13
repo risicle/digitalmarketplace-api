@@ -3,6 +3,8 @@ from flask import abort, request
 from six import iteritems, string_types
 from werkzeug.exceptions import BadRequest
 
+from sqlalchemy.sql.expression import asc, desc, nullsfirst, nullslast
+
 from .validation import validate_updater_json_or_400
 
 
@@ -154,3 +156,13 @@ def purge_nulls_from_data(data):
 def get_request_page_questions():
     json_payload = get_json_from_request()
     return json_payload.get('page_questions', [])
+
+
+def reversible_order_by_terms(reversed_):
+    """
+    returns tuple of aliases of sqlalchemy's `desc`, `asc`, `nulls_first`, `nulls_last` functions, with the sense of
+    each reversed if @reversed_ is True.
+    :param reversed_: whether returned definitions should be swapped so that the effect of using them would return
+                      reversed results.
+    """
+    return (desc, asc, nullslast, nullsfirst) if reversed_ else (asc, desc, nullsfirst, nullslast)
