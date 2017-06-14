@@ -40,7 +40,7 @@ def list_audits():
     except ValueError:
         abort(400, 'invalid page size supplied')
 
-    earliest_for_each_object = convert_to_boolean(request.args.get('earliest_for_each_object'))
+    earliest_for_each_object = convert_to_boolean(request.args.get('earliest-for-each-object'))
 
     if earliest_for_each_object:
         audits = db.session.query(AuditEvent.id)
@@ -116,7 +116,7 @@ def list_audits():
             AuditEvent.object_id,
         ).subquery()
 
-        audits = AuditEvent.query.join(audits_subquery, audits_subquery.id == AuditEvent.id)
+        audits = AuditEvent.query.join(audits_subquery, audits_subquery.c.id == AuditEvent.id)
 
     audits = audits.order_by(
         desc(AuditEvent.created_at)
