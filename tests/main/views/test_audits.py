@@ -1,14 +1,17 @@
 # -*- coding: UTF-8 -*-
 from datetime import datetime
+from itertools import chain, repeat
 import mock
+import pytest
 from nose.tools import assert_equal, assert_in, assert_true, assert_false
 from flask import json
+from six.moves import zip as izip
 
 from dmapiclient.audit import AuditTypes
 
 from app import db
 from app.models import AuditEvent
-from app.models import Supplier
+from app.models import Supplier, Service
 from tests.bases import BaseApplicationTest
 from tests.helpers import FixtureMixin
 
@@ -52,6 +55,61 @@ class BaseTestAuditEvents(BaseApplicationTest, FixtureMixin):
 
 
 class TestAuditEvents(BaseTestAuditEvents):
+    @pytest.mark.parametrize(
+        "service_audit_event_params,supplier_audit_event_params,expected_response_params",
+        (
+            (
+                (
+                    (0, AuditTypes.update_service, datetime(2010, 06, 06), None,),
+                    (0, AuditTypes.update_service, datetime(2010, 06, 07), None,),
+                    (4, AuditTypes.update_service, datetime(2010, 06, 02), None,),
+                ),
+                (
+                    (0, AuditTypes.supplier_update, datetime(2010, 06, 06), None,),
+                ),
+                (2,0,3,),
+            ),
+        ),
+    )
+    def test_earliest_for_each_object(
+            self,
+            service_audit_event_params,
+            supplier_audit_event_params,
+            expected_response_params,
+            ):
+        self.setup_dummy_suppliers(5)
+        self.setup_dummy_services(5, supplier_id=1)
+        with self.app.app_context():
+            # some migrations create audit events, but we want to start with a clean slate
+            AuditEvent.query.delete()
+            service_ids = db.session.query(Service.id).order_by(Service.id).all()
+            supplier_ids = db.session.query(Supplier.id).order_by(Supplier.id).all()
+
+            audit_events = []
+
+            for (ref_model, ref_model_ids), (obj_id, audit_type, created_at, acknowledged_at) in chain(
+                    izip(repeat((Service, service_ids,)), service_audit_event_params),
+                    izip(repeat((Supplier, supplier_ids,)), supplier_audit_event_params),
+                    ):
+                ae = AuditEvent(audit_type, "henry.flower@example.com", {}, ref_model(id=ref_model_ids[obj_id]))
+                ae.created_at = created_at
+                ae.acknowledged_at = acknowledged_at
+                ae.acknowledged = bool(acknowledged_at)
+                db.session.add(ae)
+                audit_events.append(ae)
+
+            db.session.commit()
+            # make a note of the ids that were given to these events, or rather the order they were generated
+            audit_event_id_lookup = {ae.id:i for i, ae in enumerate(audit_events)}
+            assert AuditEvent.query.count() == len(service_audit_event_params)+len(supplier_audit_event_params)
+
+        response = self.client.get('/audit-events?earliest-for-each-object=true')
+
+        assert response.status_code == 200
+        data = json.loads(response.get_data())
+
+        assert tuple(audit_event_id_lookup[ae["id"]] for ae in data["auditEvents"]) == expected_response_params
+
     def test_only_one_audit_event_created(self):
         with self.app.app_context():
             count = AuditEvent.query.count()

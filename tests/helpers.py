@@ -175,17 +175,20 @@ class FixtureMixin(object):
 
         db.session.add(Service(**service_kwargs))
         db.session.commit()
+        return service_id
 
     def setup_dummy_services(self, n, supplier_id=None, framework_id=1,
                              start_id=0, lot_id=1):
+        service_ids = []
         with self.app.app_context():
             for i in range(start_id, start_id + n):
-                self.setup_dummy_service(
+                service_ids.append(self.setup_dummy_service(
                     service_id=str(2000000000 + start_id + i),
                     supplier_id=supplier_id or (i % TEST_SUPPLIERS_COUNT),
                     framework_id=framework_id,
                     lot_id=lot_id
-                )
+                ))
+        return service_ids
 
     def setup_dummy_services_including_unpublished(self, n):
         self.setup_dummy_suppliers(TEST_SUPPLIERS_COUNT)
